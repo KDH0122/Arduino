@@ -148,7 +148,7 @@ void Counter () {
 void footsize (double led_color) {
   //left
   leds[4] = led_color; leds[5] = led_color;
-  leds[25] = led_color; leds[26] = led_color; leds[34] = led_color; leds[34] = led_color;
+  leds[25] = led_color; leds[26] = led_color; leds[33] = led_color; leds[34] = led_color;
   leds[55] = led_color; leds[56] = led_color; leds[63] = led_color; leds[64] = led_color;
   leds[65] = led_color; leds[84] = led_color; leds[85] = led_color; leds[86] = led_color;
   leds[94] = led_color; leds[95] = led_color;
