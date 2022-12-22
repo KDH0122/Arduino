@@ -1,0 +1,231 @@
+#include "FastLED.h"
+#include <SoftwareSerial.h>
+
+SoftwareSerial SwSerial(0, 1); // 블루투스 TX, RX
+
+//Mat
+#define NUM_LEDS 495  // LED 갯수(센서 수)
+#define DaTa_PIN1 A0  // LED 데이터 입력
+CRGB leds[NUM_LEDS];
+int result[NUM_LEDS];
+
+//counter
+#define RED 3//255
+#define GREEN 20//255
+#define BLUE 3//255
+#define NUM_EXT_LEDS 112                        // 갯수
+#define NumGp 32                                // 한 숫자의 LED 수
+#define DaTa_PIN2 19                            // LED 데이터 입력
+#define NUM_COLOR (RED<<16)|(GREEN<<8)|(BLUE)   // LED 색상
+CRGB Num_Leds[NUM_EXT_LEDS];
+int timer_now = 0;
+int timer_old = 0;
+int timer = 0;
+int timer_startpoint = 1;
+
+void setup() {
+  Serial.begin(115200);
+  SwSerial.begin(115200);
+  //Mat
+  for(int i = 20; i<54; i++) {
+  pinMode(i, OUTPUT);
+  digitalWrite(i,LOW);
+  }
+  //Mat & counter
+  FastLED.addLeds<NEOPIXEL,DaTa_PIN1>(leds, NUM_LEDS);
+  FastLED.addLeds<NEOPIXEL,DaTa_PIN2>(Num_Leds, NUM_EXT_LEDS);
+
+}
+
+void loop()
+{
+  for(int i = 0; i < 33; i++) {
+    digitalWrite(20+i, LOW); digitalWrite(21+i, HIGH);
+    if(i%2 == 0) {
+      result[i*15] = (analogRead(1) & 0x3F0) * 1.47; result[i*15 + 1] = (analogRead(2) & 0x3F0) * 1.47; result[i*15 + 2] = (analogRead(3) & 0x3F0) * 1.47;
+      result[i*15 + 3] = (analogRead(4) & 0x3F0) * 1.47; result[i*15 + 4] = (analogRead(5) & 0x3F0) * 1.47; result[i*15 + 5] = (analogRead(6) & 0x3F0) * 1.47;
+      result[i*15 + 6] = (analogRead(7) & 0x3F0) * 1.47; result[i*15 + 7] = (analogRead(8) & 0x3F0) * 1.47; result[i*15 + 8] = (analogRead(9) & 0x3F0) * 1.47;
+      result[i*15 + 9] = (analogRead(10) & 0x3F0) * 1.47; result[i*15 + 10] = (analogRead(11) & 0x3F0) * 1.47; result[i*15 + 11] = (analogRead(12) & 0x3F0) * 1.47;
+      result[i*15 + 12] = (analogRead(13) & 0x3F0) * 1.47; result[i*15 + 13] = (analogRead(14) & 0x3F0) * 1.47; result[i*15 + 14] = (analogRead(15) & 0x3F0) * 1.47;
+    }
+    if(i%2 == 1) {
+      result[i*15] = (analogRead(15) & 0x3F0) * 1.47; result[i*15 + 1] = (analogRead(14) & 0x3F0) * 1.47; result[i*15 + 2] = (analogRead(13) & 0x3F0) * 1.47;
+      result[i*15 + 3] = (analogRead(12) & 0x3F0) * 1.47; result[i*15 + 4] = (analogRead(11) & 0x3F0) * 1.47; result[i*15 + 5] = (analogRead(10) & 0x3F0) * 1.47;
+      result[i*15 + 6] = (analogRead(9) & 0x3F0) * 1.47; result[i*15 + 7] = (analogRead(8) & 0x3F0) * 1.47; result[i*15 + 8] = (analogRead(7) & 0x3F0) * 1.47;
+      result[i*15 + 9] = (analogRead(6) & 0x3F0) * 1.47; result[i*15 + 10] = (analogRead(5) & 0x3F0) * 1.47; result[i*15 + 11] = (analogRead(4) & 0x3F0) * 1.47;
+      result[i*15 + 12] = (analogRead(3) & 0x3F0) * 1.47; result[i*15 + 13] = (analogRead(2) & 0x3F0) * 1.47; result[i*15 + 14] = (analogRead(1) & 0x3F0) * 1.47;
+    }
+    //
+    digitalWrite(53, LOW);
+    //led display
+    for(int j = i * 15; j < 15 * (1+i); j++) {
+      //쓰레기가 정리
+      if(result[j] < 100) result[j] = 0;
+      //led 순서 작은 값, 중간 값, 큰 값
+      else if(result[j] >= 100 && result[j] < 300) leds[449-j] = CRGB::Red;//0x30A010;  0x19190A=?
+      else if(result[j] >= 300 && result[j] <450) leds[449-j] = CRGB::Yellow;//CRGB::GreenYello;  0x1F3F0F=?
+      else if(result[j] >= 450 && result[j] < 1024) leds[449-j] = CRGB::Green;
+      //초기화 버튼
+      if(result[60]+result[61]+result[62]+result[87]+result[88]+result[89]+result[90]+result[91]+result[92] > 100) {
+        memset(leds, 0, NUM_LEDS * 3); // NUM_LEDS 510
+        memset(Num_Leds, 0, NUM_EXT_LEDS*3); // NUM_EXT_LEDS 112 
+        footsize(0x228B22);
+        timer_old = millis()/1000; // 프로그램을 돌리기 시작한 후 지난 밀리 초 숫자/1000
+        timer_startpoint = 0;
+      }
+    }
+    //counter
+    timer_now = millis()/1000;
+    timer = timer_now - timer_old;
+    if(timer < 31 && timer_startpoint == 0) Counter();
+    else if(timer > 31) timer_startpoint = 1;
+
+    //foot guideline off
+    if(timer == 3) { // timer == 3 은 어떤 의미가 있는 순간?
+      footsize(0);
+      leds[95] = 0; leds[112] = 0; leds[113] = 0;
+      leds[102] = 0; leds[108] = 0; leds[109] = 0;
+    }
+    
+    // reset point
+    leds[464] = CRGB(9,15,9);
+    FastLED.setBrightness(250);
+    FastLED.show();
+
+    //counter clean
+    memset (Num_Leds, 0, NUM_EXT_LEDS*3);
+  }
+
+  //Serial 출력
+  for(int i = 0; i < 33; i++) {
+    if(i % 2 == 0) {
+      Serial.print(result[i*15]);Serial.print(", ");Serial.print(result[i*15 + 1]),Serial.print(", ");Serial.print(result[i*15 + 2]);Serial.print(", ");
+      Serial.print(result[i*15 + 3]);Serial.print(", ");Serial.print(result[i*15 + 4]);Serial.print(", ");Serial.print(result[i*15 + 5]);Serial.print(", ");
+      Serial.print(result[i*15 + 6]);Serial.print(", ");Serial.print(result[i*15 + 7]);Serial.print(", ");Serial.print(result[i*15 + 8]);Serial.print(", ");
+      Serial.print(result[i*15 + 9]);Serial.print(", ");Serial.print(result[i*15 + 10]);Serial.print(", ");Serial.print(result[i*15 + 11]);Serial.print(", ");
+      Serial.print(result[i*15 + 12]);Serial.print(", ");Serial.print(result[i*15 + 13]);Serial.print(", ");Serial.print(result[i*15 + 14]);
+    }
+    if(i % 2 == 1) {
+      Serial.print(result[i*15 + 14]);Serial.print(", ");Serial.print(result[i*15 + 13]);Serial.print(", ");Serial.print(result[i*15 + 12]);Serial.print(", ");
+      Serial.print(result[i*15 + 11]);Serial.print(", ");Serial.print(result[i*15 + 10]);Serial.print(", ");Serial.print(result[i*15 + 9]);Serial.print(", ");
+      Serial.print(result[i*15 + 8]);Serial.print(", ");Serial.print(result[i*15 + 7]);Serial.print(", ");Serial.print(result[i*15 + 6]);Serial.print(", ");
+      Serial.print(result[i*15 + 5]);Serial.print(", ");Serial.print(result[i*15 + 4]);Serial.print(", ");Serial.print(result[i*15 + 3]);Serial.print(", ");
+      Serial.print(result[i*15 + 2]);Serial.print(", ");Serial.print(result[i*15 + 1]);Serial.print(", ");Serial.print(result[i*15]);
+    }
+    Serial.print("\r\n"); // \r\n (End of Line)
+  }
+  
+  for(int i = 0; i < 33; i++) {
+    if(i % 2 == 0) {
+      SwSerial.print(result[i*15]);SwSerial.print(", ");SwSerial.print(result[i*15 + 1]),SwSerial.print(", ");SwSerial.print(result[i*15 + 2]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 3]);SwSerial.print(", ");SwSerial.print(result[i*15 + 4]);SwSerial.print(", ");SwSerial.print(result[i*15 + 5]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 6]);SwSerial.print(", ");SwSerial.print(result[i*15 + 7]);SwSerial.print(", ");SwSerial.print(result[i*15 + 8]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 9]);SwSerial.print(", ");SwSerial.print(result[i*15 + 10]);SwSerial.print(", ");SwSerial.print(result[i*15 + 11]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 12]);SwSerial.print(", ");SwSerial.print(result[i*15 + 13]);SwSerial.print(", ");SwSerial.print(result[i*15 + 14]);
+    }
+    if(i % 2 == 1) {
+      SwSerial.print(result[i*15 + 14]);SwSerial.print(", ");SwSerial.print(result[i*15 + 13]);SwSerial.print(", ");SwSerial.print(result[i*15 + 12]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 11]);SwSerial.print(", ");SwSerial.print(result[i*15 + 10]);SwSerial.print(", ");SwSerial.print(result[i*15 + 9]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 8]);SwSerial.print(", ");SwSerial.print(result[i*15 + 7]);SwSerial.print(", ");SwSerial.print(result[i*15 + 6]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 5]);SwSerial.print(", ");SwSerial.print(result[i*15 + 4]);SwSerial.print(", ");SwSerial.print(result[i*15 + 3]);SwSerial.print(", ");
+      SwSerial.print(result[i*15 + 2]);SwSerial.print(", ");SwSerial.print(result[i*15 + 1]);SwSerial.print(", ");SwSerial.print(result[i*15]);
+    }
+    SwSerial.print("\r\n");
+  }
+  Serial.print("\r\n");
+  SwSerial.print("\r\n");
+  delay(1000);
+}
+
+void Counter () {
+  if(timer < 10) Number_LED(NUM_COLOR,2,timer);
+  if(timer >= 10) {
+    Number_LED(NUM_COLOR,1,timer/10);
+    Number_LED(NUM_COLOR,2,timer%10);
+  }
+}
+
+void footsize (double led_color) {
+  //left
+  for(int l=0; l<450; l++){
+    leds[l] = CRGB(255,0,0);
+  }
+}
+
+//Number
+void Number_LED (CRGB color, char digit, char num) {
+  int mtx[NumGp], cnt; // NumGp 32
+  if(num == 0) {
+    for(cnt =0; cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==4||cnt==5||cnt==6||cnt==7||cnt==11||cnt==15||cnt==19||cnt==20||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 1) {
+    for(cnt =0; cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==6||cnt==11||cnt==12||cnt==13||cnt==14||cnt==15||cnt==19)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 2) {
+    for(cnt =0; cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==4||cnt==5||cnt==7||cnt==11||cnt==13||cnt==15||cnt==19||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+    else mtx[cnt]=0;
+    }
+  }
+  else if(num == 3) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==5||cnt==7||cnt==11||cnt==13||cnt==15||cnt==19||cnt==20||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 4) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==5||cnt==6||cnt==7||cnt==13||cnt==19||cnt==20||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 5) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==5||cnt==6||cnt==7||cnt==11||cnt==13||cnt==15||cnt==19||cnt==20||cnt==21||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 6) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==4||cnt==5||cnt==6||cnt==7||cnt==11||cnt==13||cnt==15||cnt==19||cnt==20||cnt==21||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 7) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==6||cnt==7||cnt==15||cnt==19||cnt==20||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 8) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==4||cnt==5||cnt==6||cnt==7||cnt==11||cnt==13||cnt==15||cnt==19||cnt==20||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  else if(num == 9) {
+    for(cnt=0;cnt<NumGp;cnt++) {
+      if(cnt==3||cnt==5||cnt==6||cnt==7||cnt==11||cnt==13||cnt==15||cnt==19||cnt==20||cnt==21||cnt==22||cnt==23)
+        mtx[cnt]=1;
+      else mtx[cnt]=0;
+    }
+  }
+  for(int cnt =0;cnt<NumGp;cnt++) {
+    if(!(mtx[cnt]==0)) Num_Leds[(digit*NumGp)+cnt]=color;
+  }
+}
