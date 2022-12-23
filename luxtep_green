@@ -59,6 +59,11 @@ void loop()
     digitalWrite(53, LOW);
     //led display
     for(int j = i * 15; j < 15 * (1+i); j++) {
+      if (result[j]!=0){
+        result[j-1]=result[j];
+        } 
+      }
+    for(int j = i * 15; j < 15 * (1+i); j++) {  
       //쓰레기가 정리
       if(result[j] < 100) result[j] = 0;
       //led 순서 작은 값, 중간 값, 큰 값
