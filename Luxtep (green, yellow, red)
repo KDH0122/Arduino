@@ -169,37 +169,46 @@ int act = 0; // 활성화 센서 갯수
   int redled = 0;
   int yellowled = 0;
   int greenled = 0; 
-
+  int A = 1; // A값 설정
+  int B = 10; // B값 설정
+  int C = 100; // C값 설정
     for(int i = 0; i < 33; i++) {
         for(int j = i * 15; j < 15 * (1+i); j++){
-            value[j] = (result[j]-avg)*(result[j]-avg);
-            int A = 100;
-            int B = 200;
-            int C = 300;
             
-            if (value[j]!=0){
-            value[j-1]=value[j];
+            if (result[j] != 0){
+              value[j] = (result[j]-avg)*(result[j]-avg);
+              value[j-1]=value[j];
             }
-      
-            if(value[j] < A) value[j] = 0;
-      //led 순서 작은 값, 중간 값, 큰 값
+
+            else if (result[j] = 0){
+              value[j] = 0;
+            } 
+
+            // A 미만: LED off
+            if(value[j] < A && value[j] >= 0) leds[449-j] = 0; 
+
+            // A 이상 B 미만: Green
             else if(value[j] >= A && value[j] < B) {
-              leds[449-j] = CRGB::Red;
-              redled += 1;
+              leds[449-j] = CRGB::Green; //
+              greenled += 1;
             }
+
+            // B 이상 C 미만: Yellow
             else if(value[j] >= B && value[j] < C) {
               leds[449-j] = CRGB::Yellow;
               yellowled += 1;
             }
+
+            // C 이상: Red
             else if(value[j] >= C) {
-              leds[449-j] = CRGB::Green;
-              greenled += 1;
+              leds[449-j] = CRGB::Red;
+              redled += 1;
             }
         }
     }
-
-    Serial.println(act); // 활성화 센서 갯수
+    
     Serial.println(greenled);
+    Serial.println(act); // 활성화 센서 갯수
     int percent = greenled * 100 / act;
     Serial.println(percent); // 전체 Green 백분율
   delay(1000);
